@@ -7,6 +7,7 @@ BOARD=
 ROMSIZE1=8192
 ROMSIZE2=4096
 
+# Prevent MiST / MiSTer targets being built if the user supplied the BOARDS variable when invoking make.
 TARGETS_NOMIST=$(DEMISTIFYPATH)/site.template $(DEMISTIFYPATH)/site.mk $(SUBMODULES) firmware init compile tns
 ifndef BOARDS
 	TARGETS = $(TARGETS_NOMIST) mist mister
@@ -28,6 +29,7 @@ $(DEMISTIFYPATH)/site.mk: $(DEMISTIFYPATH)/COPYING
 	$(error site.mk not found.)
 
 include $(DEMISTIFYPATH)/site.mk
+include $(DEMISTIFYPATH)/EightThirtyTwo/check_os.mk
 
 $(DEMISTIFYPATH)/EightThirtyTwo/Makefile:
 	git submodule update --init --recursive
@@ -37,23 +39,23 @@ $(SUBMODULES): $(DEMISTIFYPATH)/EightThirtyTwo/Makefile
 
 .PHONY: firmware
 firmware: $(SUBMODULES)
-	make -C firmware -f ../$(DEMISTIFYPATH)/firmware/Makefile DEMISTIFYPATH=../$(DEMISTIFYPATH) ROMSIZE1=$(ROMSIZE1) ROMSIZE2=$(ROMSIZE2)
+	make -C firmware -f ../$(DEMISTIFYPATH)/firmware/Makefile DEMISTIFYPATH=../$(DEMISTIFYPATH) ROMSIZE1=$(ROMSIZE1) ROMSIZE2=$(ROMSIZE2) DETECTED_OS=$(DETECTED_OS)
 
 .PHONY: firmware_clean
 firmware_clean: $(SUBMODULES)
-	make -C firmware -f ../$(DEMISTIFYPATH)/firmware/Makefile DEMISTIFYPATH=../$(DEMISTIFYPATH) ROMSIZE1=$(ROMSIZE1) ROMSIZE2=$(ROMSIZE2) clean
+	make -C firmware -f ../$(DEMISTIFYPATH)/firmware/Makefile DEMISTIFYPATH=../$(DEMISTIFYPATH) ROMSIZE1=$(ROMSIZE1) ROMSIZE2=$(ROMSIZE2) DETECTED_OS=$(DETECTED_OS) clean
 
 .PHONY: init
 init:
-	make -f $(DEMISTIFYPATH)/Makefile DEMISTIFYPATH=$(DEMISTIFYPATH) PROJECTTOROOT=$(PROJECTTOROOT) PROJECTPATH=$(PROJECTPATH) PROJECTS=$(PROJECT) BOARD=$(BOARD) init 
+	make -f $(DEMISTIFYPATH)/Makefile DEMISTIFYPATH=$(DEMISTIFYPATH) PROJECTTOROOT=$(PROJECTTOROOT) PROJECTPATH=$(PROJECTPATH) PROJECTS=$(PROJECT) BOARD=$(BOARD) DETECTED_OS=$(DETECTED_OS) init 
 
 .PHONY: compile
 compile: 
-	make -f $(DEMISTIFYPATH)/Makefile DEMISTIFYPATH=$(DEMISTIFYPATH) PROJECTTOROOT=$(PROJECTTOROOT) PROJECTPATH=$(PROJECTPATH) PROJECTS=$(PROJECT) BOARD=$(BOARD) compile
+	make -f $(DEMISTIFYPATH)/Makefile DEMISTIFYPATH=$(DEMISTIFYPATH) PROJECTTOROOT=$(PROJECTTOROOT) PROJECTPATH=$(PROJECTPATH) PROJECTS=$(PROJECT) BOARD=$(BOARD) DETECTED_OS=$(DETECTED_OS) compile
 
 .PHONY: clean
 clean:
-	make -f $(DEMISTIFYPATH)/Makefile DEMISTIFYPATH=$(DEMISTIFYPATH) PROJECTTOROOT=$(PROJECTTOROOT) PROJECTPATH=$(PROJECTPATH) PROJECTS=$(PROJECT) BOARD=$(BOARD) clean
+	make -f $(DEMISTIFYPATH)/Makefile DEMISTIFYPATH=$(DEMISTIFYPATH) PROJECTTOROOT=$(PROJECTTOROOT) PROJECTPATH=$(PROJECTPATH) PROJECTS=$(PROJECT) BOARD=$(BOARD) DETECTED_OS=$(DETECTED_OS) clean
 
 .PHONY: tns
 tns:
@@ -67,12 +69,12 @@ mist:
 	@echo -n "Compiling $(PROJECT) for MiST... "
 	@$(QUARTUS_MIST)/quartus_sh >mist/compile.log --flow compile mist/$(PROJECT)_MiST.qpf \
 		&& echo "\033[32mSuccess\033[0m" || grep Error mist/compile.log
-	@grep -r Design-wide\ TNS mist/*.rpt
+	@grep -r Design-wide\ TNS mist/output_files/*.rpt
 
 .PHONY: mister
 mister:
 	@echo -n "Compiling $(PROJECT) for MiSTer... "
 	@$(QUARTUS_MISTER)/quartus_sh >MiSTer/compile.log --flow compile MiSTer/$(PROJECT)_MiSTer.qpf \
 		&& echo "\033[32mSuccess\033[0m" || grep Error MiSTer/compile.log
-	@grep -r Design-wide\ TNS MiSTer/*.rpt
+	@grep -r Design-wide\ TNS MiSTer/output_files/*.rpt
 
